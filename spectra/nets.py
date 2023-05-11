@@ -9,7 +9,19 @@ from tensorflow.keras.layers import BatchNormalization, Input, Activation, MaxPo
 
 from keras.optimizers import SGD
 
-def Baseline_Model(input_dim, num_classes, OPT = 'adam', metrics=['accuracy'], loss = 'categorical_crossentropy'):
+def get_model(name, input_shape, num_classes):
+    net = None
+    if name == 'dense':
+        return Baseline_Model(input_shape, num_classes)
+    elif name == 'conv_1l':
+        return Conv_Model_1l(input_shape, num_classes)
+    else:
+        logging.error(f'Unknown model "{net_type}".')
+
+    return net
+
+def Baseline_Model(input_shape, num_classes, OPT = 'adam', metrics=['accuracy'], loss = 'categorical_crossentropy'):
+  input_dim= input_shape[0]
   # Create model
   The_Model = Sequential()
   The_Model.add(Dense(32, input_dim = input_dim, activation = 'relu'))

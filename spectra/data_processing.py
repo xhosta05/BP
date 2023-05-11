@@ -8,6 +8,14 @@ from numpy import loadtxt
 import os 
 import re 
 
+def low_pass_filter(adata: np.ndarray, bandlimit: int = 10, sampling_rate: int = 100) -> np.ndarray:
+    bandlimit_index = int(bandlimit * adata.size / sampling_rate)    
+    fsig = np.fft.fft(adata)        
+    for i in range(bandlimit_index + 1, len(fsig) - bandlimit_index ):
+        fsig[i] = 0            
+    adata_filtered = np.fft.ifft(fsig)    
+    return np.real(adata_filtered)
+
 def one_hot_encode(arr):
     onehot_encoder = preprocessing.OneHotEncoder(sparse=False).fit(arr)
     oh_labels = onehot_encoder.transform(arr)
@@ -27,7 +35,7 @@ def data_normalize(arr):
     return Dataset_Normalized
 
 
-def baseline_als(y, lam, p=0.5, niter=10):
+def baseline_als(y, lam=1e6, p=0.5, niter=10):
     L = len(y)
     D = csc_matrix(np.diff(np.eye(L), 2))
     w = np.ones(L)
@@ -39,10 +47,10 @@ def baseline_als(y, lam, p=0.5, niter=10):
         w = p * (y > z) + (1-p) * (y < z)
     return z
 
-def subtract_baseline(arr):
+def subtract_baseline(arr, lam=1e6, p=0.5, niter=10):
 	Database_baseline_subtracted= np.zeros(arr.shape)
 	for i,meas in enumerate(arr):
-	  baseline=baseline_als(meas, 1e6)
+	  baseline=baseline_als(meas)
 	  res = np.subtract(meas, baseline)
 	  Database_baseline_subtracted[i]=res
 	  

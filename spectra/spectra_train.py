@@ -46,6 +46,7 @@ def main():
 
     np.random.shuffle(dataset_all)
     split_idx= int(dataset_all.shape[0]*0.2)
+    num_classes=len(np.unique(dataset.labels))
 
     train_dataset = dataset_all[split_idx:]
     test_dataset = dataset_all[:split_idx]
@@ -55,12 +56,7 @@ def main():
     Targets = one_hot_encode(train_labels)
     Dataset  = train_dataset[:, 1:] 
     
-
-    num_classes=len(np.unique(dataset.labels))
-
-    # args.name # TODO pick model from nets)
-    # The_Model = nets.Baseline_Model(Raman_Points, num_classes)
-    The_Model = nets.Conv_Model_1l(Dataset[0].shape, num_classes)
+    The_Model = nets.get_model(args.name, Dataset[0].shape, num_classes)
     
     ########################   Training    ###########################################
     The_Model.fit(Dataset, Targets, batch_size = args.batch_size, epochs = args.epochs, shuffle = True, verbose = 1)
