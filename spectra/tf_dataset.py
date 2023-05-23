@@ -6,9 +6,9 @@ from data_processing import *
 
 class Dataset:
 #     normalize when loADING
-  def __init__(self, raman_points_count= 2047):    
-    self.raman_points_count= raman_points_count
-    self.data = np.zeros((0, raman_points_count))   
+  def __init__(self, data_points_count= 2047):    
+    self.data_points_count= data_points_count
+    self.data = np.zeros((0, data_points_count))   
     self.labels = np.zeros((0))
     self.classes = {}
     
@@ -19,6 +19,18 @@ class Dataset:
     
   def add_class(self, label, meas_class):
     self.classes[label] =   meas_class
+
+def create_dataset(measurments,label, label_class):
+  dataset=Dataset()
+  measurments = [i for i in measurments if i is not None]
+  
+  dataset.add_class(label, label_class)
+  
+  for measurment in measurments:
+      dataset.add_items(np.array(measurment[None,:]),np.array([label]))
+        
+#   print(dataset.get_data_shape())
+  return dataset
 
 def create_dataset(measurments,label, label_class):
   dataset=Dataset()
