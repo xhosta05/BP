@@ -17,7 +17,7 @@ def low_pass_filter(adata: np.ndarray, bandlimit: int = 10, sampling_rate: int =
     return np.real(adata_filtered)
 
 def one_hot_encode(arr):
-    onehot_encoder = preprocessing.OneHotEncoder(sparse=False).fit(arr)
+    onehot_encoder = preprocessing.OneHotEncoder(sparse_output=False).fit(arr)
     oh_labels = onehot_encoder.transform(arr)
     return oh_labels
     

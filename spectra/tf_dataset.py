@@ -13,7 +13,7 @@ class Dataset:
     self.classes = {}
     
   def add_items(self, data, labels):
-    data = data[:, 0:self.raman_points_count]
+    data = data[:, 0:self.data_points_count]
     self.data = np.concatenate((self.data, data))
     self.labels = np.concatenate((self.labels, labels))
     
@@ -21,19 +21,7 @@ class Dataset:
     self.classes[label] =   meas_class
 
 def create_dataset(measurments,label, label_class):
-  dataset=Dataset()
-  measurments = [i for i in measurments if i is not None]
-  
-  dataset.add_class(label, label_class)
-  
-  for measurment in measurments:
-      dataset.add_items(np.array(measurment[None,:]),np.array([label]))
-        
-#   print(dataset.get_data_shape())
-  return dataset
-
-def create_dataset(measurments,label, label_class):
-  dataset=Dataset()
+  dataset=Dataset(len(measurments[0]))
   measurments = [i for i in measurments if i is not None]
   
   dataset.add_class(label, label_class)
