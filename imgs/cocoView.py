@@ -10,7 +10,108 @@ from math import trunc
 from PIL import Image as PILImage
 from PIL import ImageDraw as PILImageDraw
 
+
+def condImgWithoutAnnot(jsonElem, conditionArg=None):
+    # delete imgs w/o annotation from json 
+    if jsonElem['id'] not in conditionArg:
+        return True
+    return False
+
+def condAnnotWithoutSeg(jsonElem, conditionArg=None):
+    # delete annotations w/o segmentation from json     
+    if not jsonElem.get("segmentation"):
+        return True
+    return False
+    
+def deleteJsonElemNot(jsonList, condition, conditionArg=None):
+    count=0
+    while len(list(jsonList)) > count: # delete imgs w/o annotation from json 
+        jsonElem=jsonList[count]        
+        if callable(condition):
+            check= condition(jsonElem, conditionArg)
+        while check:
+            lastPoppedID=jsonList[count]["id"]
+            jsonList.pop(count)
+                        
+            if len(list(jsonList)) <= count:
+                break
+            else:
+                jsonElem=jsonList[count]
+            
+            check= condition(jsonElem, conditionArg)
+        count+=1
+
+def mapID(mapDict,jsonElemList, key='id'):
+    valuesMap={}
+    for idx, jsonElem in enumerate(jsonElemList):  
+        if mapDict:
+            oldValue= jsonElem[key]
+            newValue= mapDict.get(oldValue)
+            jsonElem[key]= newValue       # change oldValue of jsonElem entry  
+        else:
+            valuesMap[jsonElem[key]] = idx    # add (oldKey:newKey) pair into valuesMap
+            jsonElem[key]=idx                      # change oldKey of jsonElem entry
+    return valuesMap
+       
+def delNoSegJSONelem(pth2json):
+# delete all COCO annotations without segmentation contour mask
+    imgIDs=[]
+    imgPaths=[]
+    with open(pth2json) as f:
+        count=0
+        data = json.load(f)
+
+        deleteJsonElemNot(data['annotations'], condAnnotWithoutSeg)
+        
+        for annot in data['annotations']:  # get paths of imgs w/ segmentation 
+            imgWithSegID=annot["image_id"]
+            imgIDs.append(imgWithSegID)
+            imgPath=data['images'][imgWithSegID]["file_name"]
+            if imgPath not in imgPaths:    # make sure not to save redundant 
+                imgPaths.append(imgPath)
+        count=0
+        
+        deleteJsonElemNot(data['images'], condImgWithoutAnnot, imgIDs)
+        
+        # changing old IDs to [0...maxIdx]
+        imgIDsMap = mapID(False,data['images'])
+        mapID(imgIDsMap,data['annotations'], key='image_id')
+        annotIDsMap = mapID({},data['annotations'])
+        return data,imgPaths
+        
+def extractCOCOparticles(annotation_path, image_dir, save_data_path):
+    with open(annotation_path) as f:
+        data = json.load(f)
+
+        for annot in data['annotations']:  # get paths of imgs w/ segmentation 
+            imgID=annot['image_id']
+            imgName=data['images'][imgID]['file_name']
+            imgName= os.path.join(image_dir,imgName)
+            img=cv2.imread(imgName)
+
+            points= annot['segmentation'][0]
+            numOfPoins=int(len(points)/2)
+            points=np.reshape(np.array(points),(numOfPoins,2)).astype(np.int)
+            xmin,ymin,w,h = cv2.boundingRect(points)  #  xmin(left),ymin(top),w,h
+
+            points = np.array( [points], dtype=np.int32 )
+            img0=np.zeros(img.shape, dtype=np.int32 )
+            cv2.fillConvexPoly(img0, points, (255,255,255))
+            img0=img0.astype(np.uint8)
+
+
+            cutoutOrig = (img[ymin:ymin+h,xmin:xmin+w])
+            cutoutMask =img0[ymin:ymin+h,xmin:xmin+w]
+
+            cutout = cv2.bitwise_and(cutoutOrig,cutoutMask)
+            imName=str(annot['id'])+data['images'][imgID]['file_name']
+            savePath= os.path.join(save_data_path,imName)
+            
+            cv2.imwrite(savePath, cutout)
+
+######################################################################################
 # Load the dataset json
+# https://gist.github.com/akTwelve/dc79fc8b9ae66828e7c7f648049bc42d#file-coco_image_viewer-ipynb
 class CocoDataset():
     def __init__(self, annotation_path, image_dir):
         self.annotation_path = annotation_path

@@ -43,29 +43,33 @@ def initialize_model(num_classes, feature_extract, use_pretrained=True):
     return model_ft, input_size
 
 
-def backgroundFrameMean(imagePaths):
-    
+def backgroundFrameMean(imagePaths,ratio=False):
     shape= cv2.imread(imagePaths[0]).shape
     background = np.zeros(shape, dtype=np.float32)
     imgCount=len(imagePaths)
     
+    if not ratio:
+    	ratio=imgCount
+    
     for idx,imgPath in enumerate(imagePaths): #skip 1st image
 #         print(i)
         currentImg= cv2.imread(imgPath)
-        cv2.accumulateWeighted(currentImg,background,1/imgCount) # src,dst,ratio(Weight of the input image)
+        cv2.accumulateWeighted(currentImg,background,1/ratio) # src,dst,ratio(Weight of the input image)
     return background.astype(np.uint8)
 
-def getPaths(data_path):
+def getPaths(data_path,leafsOnly=True):
     img_paths=[]
     for root, dirs, files in os.walk(data_path):
         for name in files:
             if re.findall('.jpg||.png', name):
-                img_paths.append(root+name)
-        break
+                img_paths.append(os.path.join(root,name))
+        if leafsOnly:
+        	break
     if not img_paths:
         print("err loading ",img_paths)
     else:
         return img_paths
+        
 def cutoutsFromImgs(img_paths):
 # at the moment, it saves the cutouts into  'particleCutouts' dir in img_paths
 #     todo change^
@@ -132,12 +136,22 @@ def generate_image(particle_examples, numberOfParticles = 20, background=None, s
 
     for i in range(numberOfParticles):
         particleImg = cv2.imread(particle_examples[i]) 
+        if (np.array(particleImg.shape) > np.array(shape)).any():
+        	print(np.array(particleImg.shape), np.array(shape))
+        	continue
+        
         image0s = np.zeros(shape, dtype=np.uint8)
         
         angle = randint(0, 359)
         rotatedImage = rotate_bound( particleImg, angle)
         ri_rows, ri_cols, _ = rotatedImage.shape
+        if (shape[0]-ri_rows)<0:
+        	print("Rotated img ",particle_examples[i])
+        	print(" bigger than bckg shouldnt happen, check particle imgs")
+        	rotatedImage=rotatedImage[ri_rows-shape[0]:,ri_cols-shape[1]:]
+        	ri_rows, ri_cols, _ = rotatedImage.shape
         row = randint(0, shape[0]-ri_rows)
+        
         col = randint(0, shape[1]-ri_cols)
         
         image0s[row:row +ri_rows, col:col+ri_cols, :] = rotatedImage
@@ -145,6 +159,7 @@ def generate_image(particle_examples, numberOfParticles = 20, background=None, s
         segMasks.append(segMask)
         
         rotatedImageBG=generated_image[row:row +ri_rows, col:col+ri_cols, :]
+        rotatedImage
         addedRotatedImage = cv2.addWeighted(rotatedImageBG,1,rotatedImage,1,0)
         
         generated_image[row:row +ri_rows, col:col+ri_cols, :] =  addedRotatedImage    
