@@ -20,19 +20,21 @@ def label_regions(binary_image, kernel_size):
     return cv2.connectedComponentsWithStats(image) # (labelsCount, labelIds, values, centroid)
     
 def segment_image(image, treshold):
-    image=get_gray(image)
-    particles = np.invert(image > treshold) 
-    return particles
+	if len(image.shape)==3 and image.shape[2]==3: #TODO test
+		image=get_gray(image)
+	particles = np.invert(image > treshold) 
+	return particles
     
 def getMask(image,threshold=100,kernelSize=7):
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-    particles_mask = segment_image(image,threshold)  # img2binaryImg
-    # todo check other imgs (auto threshold)
-    labelsCount, labelIds, values, centroid=label_regions(particles_mask, kernelSize) #image morphology
-    resultMask = (labelIds == 0).astype("uint8") * 255
+	if len(image.shape)==3 and image.shape[2]==3: #TODO test
+		image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+		
+	particles_mask = segment_image(image,threshold)  # img2binaryImg
+	# todo check other imgs (auto threshold)
+	labelsCount, labelIds, values, centroid=label_regions(particles_mask, kernelSize) #image morphology
+	resultMask = (labelIds == 0).astype("uint8") * 255
 	# output = cv2.bitwise_not(componentMask)
-    return resultMask
+	return resultMask
 
 def contour2img(image,contour,savePath=None):    
     img = image.copy() # Draw the contour into image

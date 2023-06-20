@@ -1,39 +1,46 @@
+import torchvision.transforms as T
 import numpy as np
+import torch
 import os
 
 from torch.utils.data import Dataset, DataLoader
 
 
-class Dataset(Dataset):
-	def __init__(self, features, labels, transform=None, target_transform=None):
-		#self.data_points_count= data_points_count
-		#self.data = np.zeros((0, data_points_count))   
-		#self.labels = np.zeros((0))
-		#self.classes = {}
-		self.features = features
-		self.labels = labels
+class DataSetCustom(torch.utils.data.Dataset):
+    def __init__(self, inImgs, gtImgs, augImgs=[], transformIn=None, transformGT=None):
+        self.inImgs=inImgs
+        self.gtImgs=gtImgs
+        self.augImgs=augImgs
+        self.transformIn = transformIn
+        self.transformGT = transformGT
 
-		# self.transform = transform
-		# self.target_transform = target_transform
+    def __len__(self):
+        return len(self.inImgs)
 
-	def __len__(self):
-		return len(self.features)
-	
-	"""
-	def add_items(self, data, labels):
-		data = data[:, 0:self.data_points_count]
-		self.data = np.concatenate((self.data, data))
-		self.labels = np.concatenate((self.labels, labels))
+    def __getitem__(self, idx):
+        # inImg = read_image(self.inImgs[idx])
+        # inImg = self.inImgs[idx]
+        # gtImg = self.gtImgs[idx]
 
-	def add_class(self, label, meas_class):
-		self.classes[label] =   meas_class
-	"""
-	
-	def add_item(features,label):
-		self.features.append(feature)
-		self.labels.append(label)
+        inImg = cv2.imread(self.inImgs[idx])
+        
+        gtImg = cv2.imread(self.gtImgs[idx])
+        threshold, r = cv2.threshold(gtImg[:,:,0], 100, 255, cv2.THRESH_BINARY)
+        threshold, g = cv2.threshold(gtImg[:,:,1], 100, 255, cv2.THRESH_BINARY)
+        threshold, b = cv2.threshold(gtImg[:,:,2], 100, 255, cv2.THRESH_BINARY)
+        gtImg=np.stack((r,g,b),axis=2)
+        
+        if self.augImgs:
+            augImg = cv2.imread(self.augImgs[idx])
+        else:
+            augImg = np.array([])
 
-	def __getitem__(self, idx):
-		feature =  self.features[idx]
-		label =  self.labels[idx]
-		return feature, label
+        if self.transformIn:
+            inImg = self.transformIn(inImg)
+        if self.transformGT:
+            gtImg = self.transformGT(gtImg)
+        if self.transformIn and np.any(augImg):
+            augImg = self.transformIn(augImg)
+            
+        return inImg, gtImg, augImg
+        

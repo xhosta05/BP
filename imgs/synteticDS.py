@@ -120,52 +120,6 @@ def sortImgs2dirs(classResults,imageFolder,save2Path=None):
         os.replace(src, dst)
 
 
-def generate_image(particle_examples, numberOfParticles = 20, background=None, shape=(1080,1920,3), img_config=None):
-# particle_examples = path to cutouts of particles
-    particleImgs=[]
-    for particle_example in particle_examples:
-        img = cv2.imread(particle_example)
-        particleImgs.append(img)
-    
-    if background is None:
-        generated_image = np.zeros(shape, dtype=np.uint8)
-    else:
-        generated_image = copy.deepcopy(background)
-        shape=background.shape
-    segMasks = []
-
-    for i in range(numberOfParticles):
-        particleImg = cv2.imread(particle_examples[i]) 
-        if (np.array(particleImg.shape) > np.array(shape)).any():
-        	print(np.array(particleImg.shape), np.array(shape))
-        	continue
-        
-        image0s = np.zeros(shape, dtype=np.uint8)
-        
-        angle = randint(0, 359)
-        rotatedImage = rotate_bound( particleImg, angle)
-        ri_rows, ri_cols, _ = rotatedImage.shape
-        if (shape[0]-ri_rows)<0:
-        	print("Rotated img ",particle_examples[i])
-        	print(" bigger than bckg shouldnt happen, check particle imgs")
-        	rotatedImage=rotatedImage[ri_rows-shape[0]:,ri_cols-shape[1]:]
-        	ri_rows, ri_cols, _ = rotatedImage.shape
-        row = randint(0, shape[0]-ri_rows)
-        
-        col = randint(0, shape[1]-ri_cols)
-        
-        image0s[row:row +ri_rows, col:col+ri_cols, :] = rotatedImage
-        segMask = utils.getMask(image0s,threshold=1,kernelSize=1) 
-        segMasks.append(segMask)
-        
-        rotatedImageBG=generated_image[row:row +ri_rows, col:col+ri_cols, :]
-        rotatedImage
-        addedRotatedImage = cv2.addWeighted(rotatedImageBG,1,rotatedImage,1,0)
-        
-        generated_image[row:row +ri_rows, col:col+ri_cols, :] =  addedRotatedImage    
-        
-    return [generated_image, segMasks]
-
 def train_model(model, dataloaders, criterion, optimizer, num_epochs=25, device="cpu", is_inception=False):
     since = time.time()
 
