@@ -8,17 +8,6 @@ import torchvision
 
 from collections import OrderedDict
 
-def dummy_model(in_planes = 3, out_planes = 64, kernel_size = 5, activation_fn = None, batch_normalization=False):
-
-
-	model= nn.Sequential(
-		nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size),
-		nn.ReLU(),	
-		nn.Linear(out_planes, 45),
-	)
-
-	return model
-
 
 class EncoderBlock(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, num_of_conv_blocks = 1, act_fn = None, pad_to_conserve_dimensions=False) -> None:
@@ -40,7 +29,7 @@ class EncoderBlock(nn.Module):
     def forward(self, x):
         return self.module(x)
         
-"""Inspired by https://amaarora.github.io/2020/09/13/unet.html"""
+
 class Encoder(nn.Module):
     def __init__(self, chs=(3,64,128,256,512,1024)):
         super().__init__()
@@ -105,41 +94,4 @@ class UNet(nn.Module):
         if self.retain_dim:
             out = F.interpolate(out, self.out_sz)
         return out
-"""
-	model = nn.Sequential(
-		  nn.Conv2d(1,20,5),
-		  nn.ReLU(),
-		  nn.Conv2d(20,64,5),
-		  nn.ReLU()
-        )
-		nn.ConvTranspose2d(out_planes, in_planes, kernel_size=kernel_size),
-		nn.ReLU(),	
-        
-		nn.BatchNorm2d(out_planes) if batch_normalization else ...,
-		activation_fn() if activation_fn is not None else ..."""
-		
-
-class Conv_Model_1l(torch.nn.Module):
-    def __init__(self, in_channels, out_classes = 3, inner_dia=64):
-        super(Conv_Model_1l, self).__init__()
-        self.layer1 = torch.nn.Conv1d(in_channels=in_channels, out_channels=inner_dia, kernel_size=4, stride=2)
-        self.act1 = torch.nn.ReLU()
-        self.dense = torch.nn.Linear(in_features=inner_dia*4 , out_features=out_classes)
-        
-        self.fl = torch.nn.Flatten()
-        self.d = nn.Dropout(p=0.3)
-        
-        # self.layer2 = torch.nn.Conv1d(in_channels=inner_dia, out_channels=out_classes, kernel_size=1)
-        
-		# nn.Linear(out_planes, 45),
-    def forward(self, x):
-        x = self.layer1(x)
-        x = self.act1(x)
-        x = self.fl(x)
-        x = self.dense(x)
-        
-        log_probs = torch.nn.functional.log_softmax(x, dim=1)
-
-        return log_probs
-
 

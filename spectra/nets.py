@@ -1,51 +1,30 @@
-import tensorflow as tf
+import torch
+import torch.nn as nn
 
-from tensorflow import keras
-from tensorflow.keras import layers
-from tensorflow.keras.models import Sequential
+class Simple1DCNN(torch.nn.Module):
+    def __init__(self,classes):
+        super(Simple1DCNN, self).__init__()
 
-from tensorflow.keras.layers import Dense, Dropout, Conv1D, Flatten, MaxPooling1D
-from tensorflow.keras.layers import BatchNormalization, Input, Activation, MaxPool1D
+        # self.bn1 = nn.BatchNorm1d(infeatures)
+        
+        self.layer1 = torch.nn.Conv1d(in_channels=1, out_channels=20, kernel_size=3, stride=2)
+        self.act1 = torch.nn.ReLU()
 
-from keras.optimizers import SGD
+#         self.layer2 = torch.nn.Conv1d(in_channels=20, out_channels=3, kernel_size=1)
+        self.layer2 = torch.nn.Conv1d(in_channels=20, out_channels=1, kernel_size=1)
+        self.act2 = torch.nn.ReLU()
 
-def get_model(name, input_shape, num_classes):
-    net = None
-    if name == 'dense':
-        return Baseline_Model(input_shape, num_classes)
-    elif name == 'conv_1l':
-        return Conv_Model_1l(input_shape, num_classes)
-    else:
-        logging.error(f'Unknown model "{net_type}".')
+        self.avgpool = nn.AdaptiveAvgPool1d(256)
+        self.lin = nn.Linear(256, classes)
 
-    return net
+    def forward(self, x):
+        x = self.layer1(x)
+        x = self.act1(x)
 
-def Baseline_Model(input_shape, num_classes, OPT = 'adam', metrics=['accuracy'], loss = 'categorical_crossentropy'):
-  input_dim= input_shape[0]
-  # Create model
-  The_Model = Sequential()
-  The_Model.add(Dense(32, input_dim = input_dim, activation = 'relu'))
-  The_Model.add(Dense(num_classes, activation = 'softmax'))
-  # Compile model
-  The_Model.compile(loss = 'categorical_crossentropy', optimizer = OPT, metrics=['accuracy'])
-  return The_Model
+        x = self.layer2(x)
+        x = self.act2(x)
 
-def Conv_Model_1l(input_shape, num_classes, OPT = 'adam', time_steps = 1, metrics=['accuracy'], loss = 'categorical_crossentropy'):
-  # OPT =keras.optimizers.Adam( learning_rate=0.001, weight_decay=True)
-  # OPT = SGD(learning_rate = 0.01, momentum = 0.9)
-  
-  model = tf.keras.Sequential()
-  model.add(layers.Input(shape=(input_shape), name="input"))
-
-  model.add(layers.RepeatVector(time_steps))
-  model.add(Dropout(0.5))
-  model.add(Conv1D(64, 2, activation="relu", padding="same"))
-
-  model.add(Dropout(0.5))  
-  model.add(Dense(num_classes, activation = 'softmax'))
-  
-  model.add(Flatten())
-
-  model.compile(loss = loss, optimizer = OPT, metrics = metrics)
-  return model
+        x = self.avgpool(x)
+        x = self.lin(x)
+        return x
 

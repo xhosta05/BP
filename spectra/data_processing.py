@@ -4,6 +4,8 @@ from sklearn import preprocessing
 import pandas as pd
 import numpy as np
 from numpy import loadtxt
+from BaselineRemoval import BaselineRemoval
+
 
 import os 
 import re 
@@ -25,7 +27,7 @@ def one_hot_encode(arr,classes):
     
 def data_normalize(arr):
     St_Idx = 0
-    End_Idx = 2047
+    End_Idx = 2048
 
     DataLoaded = arr[:, St_Idx:End_Idx]
     Rows, Cols = (DataLoaded.shape)
@@ -50,14 +52,16 @@ def baseline_als(y, lam=1e6, p=0.5, niter=10):
     return z
 
 def subtract_baseline(arr, lam=1e6, p=0.5, niter=10):
-	Database_baseline_subtracted= np.zeros(arr.shape)
-	for i,meas in enumerate(arr):
-	  baseline=baseline_als(meas)
-	  res = np.subtract(meas, baseline)
-	  Database_baseline_subtracted[i]=res
-	  
-	return Database_baseline_subtracted
+    Database_baseline_subtracted= np.zeros(arr.shape)
+    for i,meas in enumerate(arr):        
+        baseline=data_processing.baseline_als(meas)
+        res = np.subtract(meas, baseline)
+        
+#         baseObj=BaselineRemoval(meas)
+#         res=baseObj.ZhangFit()
+        Database_baseline_subtracted[i]=res
 
+    return Database_baseline_subtracted
 def text_read(path): # todo multiple lines
   with open(path, 'r', encoding="utf-8", errors='replace') as file:
       for row in file:
@@ -65,6 +69,12 @@ def text_read(path): # todo multiple lines
         arr = np.array(arr[:-1]).astype(int)
   return arr
 
+def dataPipeline(arr):
+    arr=subtract_baseline(arr)
+    arr=data_processing.low_pass_filter(arr)
+    arr=data_processing.data_normalize(arr)
+    return arr
+    
 def txt2csv(path, shape):
   pic=np.empty(shape=shape)
   for root, dirs, files in os.walk(path, topdown=False):
@@ -89,15 +99,15 @@ def arr2pic(arr, shape, model):
     Max_YScanIdx = shape[1]
     RamanImage = np.zeros((Max_XScanIdx, Max_YScanIdx))
     
-    Model_Prediction = model.predict(arr)  
+    # Model_Prediction = model.predict(arr)  
+    Model_Prediction = model(arr)  
     for Idx_X in range(Max_XScanIdx):
         for Idx_Y in range(Max_YScanIdx):
             idx=Idx_X * Max_YScanIdx +  Idx_Y
             if len(Model_Prediction)>idx:
-                RamanImage[Idx_X][Idx_Y]= np.argmax(Model_Prediction[idx])
+                RamanImage[Idx_X][Idx_Y]= np.argmax(Model_Prediction[idx].detach().numpy())
     return  RamanImage
  
-    
 def data2df(dataset):
 	"""
 	Converts array with raman measurments into pandas dataframe.
